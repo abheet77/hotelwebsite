@@ -1,4 +1,5 @@
 "use client";
+import Navbar from "../layout/Navbar";
 
 export default function Hero() {
   return (
@@ -6,27 +7,40 @@ export default function Hero() {
       className="relative h-screen bg-cover bg-center"
       style={{ backgroundImage: 'url("/hero.png")' }}
     >
+      <Navbar />
+
       {/* Overlay */}
       <div className="absolute inset-0 bg-black/40"></div>
 
       {/* Content */}
-      <div className="absolute inset-0 flex items-center px-8 md:px-16 lg:px-24 z-10">
-        <div className="text-white max-w-md space-y-4">
-          <h1 className="mb-4">
-            <span className="font-['Montserrat'] text-[50px] font-light leading-[1.4] tracking-[0.35em]">WELCOME TO </span>
-            <span className="font-['Aboreto'] text-[130px] font-normal leading-[1] tracking-normal">CENTRAL </span>
-            <span className="font-['Aboreto'] text-[60px] font-light leading-[1.2] tracking-[0.4em]">HOTEL</span>
+      <div className="absolute inset-0 flex items-center z-10 px-6 md:px-16">
+        
+        <div className="text-white max-w-2xl">
+
+          <p className="text-sm md:text-base tracking-[0.4em] mb-2 text-gray-200">
+            WELCOME TO
+          </p>
+
+          <h1 className="text-5xl md:text-7xl lg:text-5xl max-w-2xl -ml-1 font-light tracking-[0.05em] leading-none">
+            CENTRAL
           </h1>
 
-          <p className="font-['Montserrat'] text-[25px] mb-6">
+          <h2 className="text-lg md:text-2xl tracking-[0.5em] mt-2 text-gray-200">
+            HOTEL
+          </h2>
+
+          <p className="mt-6 text-sm md:text-lg text-gray-300 max-w-md">
             Book your stay and enjoy Luxury redefined at the most affordable rates.
           </p>
 
-          <button className="bg-[#30b0c7] hover:bg-[#2a9ca8] px-6 py-3 rounded-lg">
+          <button className="mt-6 bg-teal-500 hover:bg-teal-600 text-white px-6 py-3 rounded-md text-sm md:text-base">
             BOOK NOW
           </button>
+
         </div>
+
       </div>
+
     </div>
   );
 }
