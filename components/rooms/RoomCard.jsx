@@ -1,6 +1,8 @@
+"use client";
+import { useRouter } from "next/navigation";
 export default function RoomCard(props) {
     const { title, image, capacity, price } = props;
-
+    const router = useRouter();
     return (
         <div className="w-3/4 rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition duration-300">
 
@@ -20,9 +22,10 @@ export default function RoomCard(props) {
                     <span className="tracking-wide">MAX CAP: {capacity}</span>
                 </div>
 
-                <button className="bg-teal-500 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-teal-600 transition">
+                <button onClick={() => router.push("/booking")} className="bg-teal-500 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-teal-600 transition">
                     Rs {price} / night
                 </button>
+                
 
             </div>
 
