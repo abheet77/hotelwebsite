@@ -1,24 +1,29 @@
 export default function RoomCard(props) {
-    const { title, image, capacity } = props;
+    const { title, image, capacity, price } = props;
 
     return (
-        <div className="rounded-lg border overflow-hidden bg-white shadow-sm w-full">
+        <div className="w-3/4 rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition duration-300">
 
             {/* Image */}
             <img src={image} alt={title} className="w-full aspect-[16/9] object-cover" />
 
             {/* Title */}
-            <div className="bg-teal-500 text-white text-center py-2 font-semibold text-sm">
+            <div className="bg-teal-500 text-white text-center py-3 font-semibold tracking-wide text-lg">
                 {title}
             </div>
 
             {/* Bottom */}
-            <div className="flex justify-between items-center px-5 py-4 text-sm bg-gray-50">
-                <span>MAX CAP: {capacity}</span>
+            <div className="flex justify-between items-center px-6 py-4 text-sm bg-gray-50">
 
-                <button className="bg-teal-500 text-white px-3 py-1 rounded text-xs hover:bg-teal-600 transition">
-                    Know more
+                <div className="flex items-center gap-2 text-gray-700">
+                    <span className="text-xl font-light">+</span>
+                    <span className="tracking-wide">MAX CAP: {capacity}</span>
+                </div>
+
+                <button className="bg-teal-500 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-teal-600 transition">
+                    Rs {price} / night
                 </button>
+
             </div>
 
         </div>
