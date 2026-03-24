@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-  ],
+, "app/rooms/page.jsx", "components/rooms/FunFact.jsx", "components/rooms/RoomCard.jsx", "components/rooms/RoomsList.jsx", "app/page.jsx"  ],
   "exclude": ["node_modules"]
 }
