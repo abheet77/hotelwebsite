@@ -1,4 +1,10 @@
+"use client";
+import { useRouter } from "next/navigation";
 export default function Features() {
+  const router = useRouter();
+  const handleExploreClick = () => {
+  router.push("/rooms?scroll=rooms");
+};
   return (
     <div className="bg-white text-black py-16 px-6 md:px-16">
 
@@ -20,10 +26,12 @@ export default function Features() {
             Our rooms are designed to transport you into an environment made for leisure.
             Take your mind off the day-to-day of home life and find a private paradise for yourself.
           </p>
-
-          <button className="bg-teal-500 text-white px-4 py-2 rounded">
-            EXPLORE
-          </button>
+<button
+  onClick={handleExploreClick}
+  className="bg-teal-500 text-white px-4 py-2 rounded"
+>
+  EXPLORE
+</button>
         </div>
 
         {/* Right Image */}
@@ -36,11 +44,15 @@ export default function Features() {
       <div className="grid md:grid-cols-2 gap-10 items-center">
 
         {/* Left Image */}
-        <img src="/room1.png" alt="woods" className="w-full h-[300px] object-cover rounded-xl" />
+        <img
+  src="/room1.png"
+  alt="woods"
+  className="w-full h-[300px] object-cover rounded-xl order-2 md:order-1"
+/>
 
         {/* Right Text */}
         <div>
-          <h2 className="text-2xl md:text-3xl font-semibold mb-4">
+          <h2 className="text-2xl md:text-3xl font-semibold mb-4 order-1 md:order-2">
             EMBRACE THE WOODS
           </h2>
 
@@ -49,9 +61,12 @@ export default function Features() {
             each moment brings peace and adventure.
           </p>
 
-          <button className="bg-teal-500 text-white px-4 py-2 rounded">
-            EXPLORE
-          </button>
+          <button
+  onClick={handleExploreClick}
+  className="bg-teal-500 text-white px-4 py-2 rounded"
+>
+  EXPLORE
+</button>
         </div>
 
       </div>
