@@ -23,8 +23,7 @@ export default function RoomsList() {
     ];
 
     return (
-        <div className="w-full flex flex-col gap-16 items-center ">
-            {rooms.map((room, index) => (
+<div className="w-full flex flex-col items-center gap-8 sm:gap-10 lg:gap-12">            {rooms.map((room, index) => (
                 <RoomCard
                     key={index}
                     title={room.title}
