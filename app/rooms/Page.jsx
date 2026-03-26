@@ -7,7 +7,6 @@ import RoomsHeader from "@/components/rooms/RoomsHeader";
 import FunFact from "@/components/rooms/FunFact";
 import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
-import ScrollOrb from "@/components/rooms/ScrollOrb";
 import ScrollPath from "@/components/rooms/ScrollPath";
 
 export default function RoomsPage() {
@@ -25,17 +24,12 @@ export default function RoomsPage() {
 
   return (
     <>
-    <ScrollPath /> 
-       <ScrollOrb /> 
-      {/* FULL WIDTH */}
+      <ScrollPath />
       <Hero />
-    
 
-      {/* CONSTRAINED CONTENT */}
-      <main className="bg-white text-black px-6 md:px-[80px] lg:px-[140px] py-12">
+      <main className="relative bg-white px-6 py-12 text-black md:px-[80px] lg:px-[120px]">
         <RoomsHeader />
 
-        {/* 🔥 TARGET SECTION */}
         <div id="rooms-section">
           <RoomsList />
         </div>
@@ -43,7 +37,6 @@ export default function RoomsPage() {
         <FunFact />
       </main>
 
-      {/* FULL WIDTH */}
       <Footer />
     </>
   );
