@@ -7,6 +7,8 @@ import RoomsHeader from "@/components/rooms/RoomsHeader";
 import FunFact from "@/components/rooms/FunFact";
 import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
+import ScrollOrb from "@/components/rooms/ScrollOrb";
+import ScrollPath from "@/components/rooms/ScrollPath";
 
 export default function RoomsPage() {
   const searchParams = useSearchParams();
@@ -23,8 +25,11 @@ export default function RoomsPage() {
 
   return (
     <>
+    <ScrollPath /> 
+       <ScrollOrb /> 
       {/* FULL WIDTH */}
       <Hero />
+    
 
       {/* CONSTRAINED CONTENT */}
       <main className="bg-white text-black px-6 md:px-[80px] lg:px-[140px] py-12">

@@ -52,13 +52,48 @@ export default function Navbar() {
         {/* Desktop Menu */}
         <div className="hidden md:flex space-x-12 text-white text-sm font-medium">
 
-          <button onClick={handleHomeClick}>Home</button>
+          <button
+  onClick={handleHomeClick}
+  className="relative group transition duration-300"
+>
+  <span className="group-hover:text-teal-400 transition duration-300">
+    Home
+  </span>
 
-          <button onClick={handleFacilitiesClick}>Facilities</button>
+  <span className="absolute left-0 -bottom-1 w-0 h-[2px] bg-teal-400 transition-all duration-300 group-hover:w-full"></span>
+</button>
 
-          <button onClick={handleRoomsClick}>Rooms</button>
+          <button
+            onClick={handleFacilitiesClick}
+            className="relative group transition duration-300"
+          >
+            <span className="group-hover:text-teal-400 transition duration-300">
+              Facilities
+            </span>
+            <span className="absolute left-0 -bottom-1 w-0 h-[2px] bg-teal-400 transition-all duration-300 group-hover:w-full"></span>
+          </button>
 
-          <button onClick={handleContactClick}>Contact-us</button>
+          <button
+  onClick={handleRoomsClick}
+  className="relative group transition duration-300"
+>
+  <span className="group-hover:text-teal-400 transition duration-300">
+    Rooms
+  </span>
+
+  <span className="absolute left-0 -bottom-1 w-0 h-[2px] bg-teal-400 transition-all duration-300 group-hover:w-full"></span>
+</button>
+
+        <button
+  onClick={handleContactClick}
+  className="relative group transition duration-300"
+>
+  <span className="group-hover:text-teal-400 transition duration-300">
+    Contact-us
+  </span>
+
+  <span className="absolute left-0 -bottom-1 w-0 h-[2px] bg-teal-400 transition-all duration-300 group-hover:w-full"></span>
+</button>
 
         </div>
 

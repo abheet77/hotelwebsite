@@ -1,7 +1,12 @@
 "use client";
 import Navbar from "../layout/Navbar";
+import { useRouter } from "next/navigation";
 
 export default function Hero() {
+  const router = useRouter();
+  const handleBookNow = () => {
+  router.push("/rooms?scroll=rooms");
+};
   return (
     <div
       className="w-full h-screen relative bg-cover bg-center"
@@ -32,10 +37,15 @@ export default function Hero() {
           <p className="mt-6 text-xs sm:text-sm md:text-base leading-relaxed text-gray-300 max-w-md">
             Book your stay and enjoy Luxury redefined at the most affordable rates.
           </p>
-
-          <button className="mt-6 bg-teal-500 hover:bg-teal-600 text-white px-6 py-3 rounded-md text-xs sm:text-sm md:text-base px-5 py-2.5 sm:px-6 sm:py-3">
-            BOOK NOW
-          </button>
+  <button
+    onClick={handleBookNow}
+    className="mt-8 bg-teal-500 text-white px-6 py-3 rounded-md
+              transition duration-300 ease-out
+              hover:bg-teal-600 hover:-translate-y-1 hover:shadow-lg
+              active:scale-95"
+  >
+    BOOK NOW
+  </button>
 
         </div>
 
