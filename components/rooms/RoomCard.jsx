@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -46,9 +47,11 @@ export default function RoomCard({ title, images, price, details, index}) {
     `}
     >
       <div className="relative h-[220px] w-full overflow-hidden sm:h-[260px] lg:h-[300px]">
-        <img
+        <Image
           src={safeImages[current]}
           alt={title}
+          fill
+          sizes="(max-width: 1024px) 95vw, 70vw"
           className="h-full w-full object-cover"
         />
 

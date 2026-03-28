@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
@@ -143,10 +144,12 @@ export default function Features() {
         </div>
 
         {/* Right Image */}
-        <img
+        <Image
           ref={firstImageRef}
           src="/room2.png"
           alt="room"
+          width={1200}
+          height={800}
           className="h-[300px] w-full rounded-xl object-cover shadow-[0_24px_60px_-32px_rgba(15,118,110,0.35)]"
         />
       </div>
@@ -155,10 +158,12 @@ export default function Features() {
       <div className="grid md:grid-cols-2 gap-10 items-center">
 
         {/* Left Image */}
-        <img
+        <Image
           ref={secondImageRef}
           src="/room1.png"
           alt="woods"
+          width={1200}
+          height={800}
           className="order-2 h-[300px] w-full rounded-xl object-cover shadow-[0_24px_60px_-32px_rgba(15,118,110,0.35)] md:order-1"
         />
 

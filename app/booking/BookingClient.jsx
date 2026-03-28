@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
 
 const ROOM_CONFIG = {
@@ -319,9 +320,11 @@ export default function BookingClient({ room, price }) {
         <aside className="lg:sticky lg:top-10">
           <div className="overflow-hidden rounded-[24px] border border-stone-200 bg-white shadow-[0_22px_50px_-32px_rgba(15,23,42,0.24)]">
             <div className="relative h-64 overflow-hidden">
-              <img
+              <Image
                 src={image}
                 alt={room || "Selected room"}
+                fill
+                sizes="(max-width: 1024px) 100vw, 40vw"
                 className="h-full w-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-transparent" />
