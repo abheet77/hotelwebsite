@@ -59,6 +59,27 @@ const BOOKING_TERMS = [
   "Date changes or cancellations should be requested in advance.",
 ];
 
+function formatLocalDate(date) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function parseDateString(value) {
+  if (!value) return null;
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+}
+
+function addDays(value, days) {
+  const date = parseDateString(value);
+  if (!date) return "";
+  date.setDate(date.getDate() + days);
+  return formatLocalDate(date);
+}
+
 function QuantityInput({
   label,
   value,
@@ -135,13 +156,15 @@ export default function BookingClient({ room, price }) {
   const maxMattress = selectedRoomCount * maxMattressPerRoom;
   const selectedMattressCount = Math.min(mattressCount, maxMattress);
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = formatLocalDate(new Date());
+  const minimumCheckoutDate = checkIn ? addDays(checkIn, 1) : today;
 
   const nights = useMemo(() => {
     if (!checkIn || !checkOut) return 0;
 
-    const start = new Date(checkIn);
-    const end = new Date(checkOut);
+    const start = parseDateString(checkIn);
+    const end = parseDateString(checkOut);
+    if (!start || !end) return 0;
     const diffTime = end - start;
     return diffTime / (1000 * 60 * 60 * 24);
   }, [checkIn, checkOut]);
@@ -203,14 +226,42 @@ export default function BookingClient({ room, price }) {
     setMattressCount(Math.min(maxMattress, Math.max(0, nextMattressValue || 0)));
   };
 
+  const handleCheckInChange = (nextCheckIn) => {
+    setCheckIn(nextCheckIn);
+
+    if (!nextCheckIn) {
+      setCheckOut("");
+      return;
+    }
+
+    const nextMinimumCheckout = addDays(nextCheckIn, 1);
+    if (!checkOut || checkOut < nextMinimumCheckout) {
+      setCheckOut(nextMinimumCheckout);
+    }
+  };
+
+  const handleCheckOutChange = (nextCheckOut) => {
+    if (!nextCheckOut) {
+      setCheckOut("");
+      return;
+    }
+
+    if (nextCheckOut < minimumCheckoutDate) {
+      setCheckOut(minimumCheckoutDate);
+      return;
+    }
+
+    setCheckOut(nextCheckOut);
+  };
+
   return (
-    <main className="min-h-screen bg-white px-4 py-16 sm:px-6 md:px-[80px] lg:px-[140px]">
+    <main className="min-h-screen overflow-x-clip bg-white px-3 py-16 sm:px-6 md:px-[80px] lg:px-[140px]">
       <h1 className="mb-12 flex justify-center text-3xl font-semibold text-gray-900 md:text-4xl">
         Book Your Stay
       </h1>
 
-      <div className="mx-auto grid w-full max-w-6xl gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
-        <div className="w-full rounded-xl border border-gray-200 bg-white p-8 shadow-md">
+      <div className="mx-auto grid w-full max-w-6xl gap-8 overflow-x-clip lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-start">
+        <div className="min-w-0 w-full rounded-xl border border-gray-200 bg-white p-5 shadow-md sm:p-8">
           <div className="mb-6">
             <label className="mb-2 block text-sm font-medium text-gray-800">
               Room Type
@@ -244,7 +295,7 @@ export default function BookingClient({ room, price }) {
                 type="date"
                 min={today}
                 value={checkIn}
-                onChange={(e) => setCheckIn(e.target.value)}
+                onChange={(e) => handleCheckInChange(e.target.value)}
                 className="w-full rounded-md border border-gray-300 px-4 py-3 text-gray-800"
               />
             </div>
@@ -255,9 +306,9 @@ export default function BookingClient({ room, price }) {
               </label>
               <input
                 type="date"
-                min={checkIn || today}
+                min={minimumCheckoutDate}
                 value={checkOut}
-                onChange={(e) => setCheckOut(e.target.value)}
+                onChange={(e) => handleCheckOutChange(e.target.value)}
                 className="w-full rounded-md border border-gray-300 px-4 py-3 text-gray-800"
               />
             </div>
@@ -345,7 +396,7 @@ export default function BookingClient({ room, price }) {
           </button>
         </div>
 
-        <aside className="lg:sticky lg:top-10">
+        <aside className="min-w-0 lg:sticky lg:top-10">
           <div className="overflow-hidden rounded-[24px] border border-stone-200 bg-white shadow-[0_22px_50px_-32px_rgba(15,23,42,0.24)]">
             <div className="relative h-64 overflow-hidden">
               <Image

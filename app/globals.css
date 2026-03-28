@@ -19,6 +19,17 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+html,
+body {
+  overflow-x: clip;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 :root {
   --font-aboreto: var(--font-aboreto);
   --font-montserrat: var(--font-montserrat);
