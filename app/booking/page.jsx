@@ -1,126 +1,152 @@
 "use client";
+
+import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+
+const ROOM_CONFIG = {
+  "Market Facing": {
+    capacity: 3,
+    maxMattressPerRoom: 1,
+    breakfastPrice: 500,
+    image: "/marketfacing1.png",
+    tagline: "Warm interiors with a lively market-facing outlook.",
+    facilities: [
+      "King size bed",
+      "Free WiFi",
+      "Hot water",
+      "Television",
+      "11 x 15 ft room",
+      "Window seating area",
+    ],
+  },
+  "Hill Facing": {
+    capacity: 3,
+    maxMattressPerRoom: 1,
+    breakfastPrice: 500,
+    image: "/hillfacing1.png",
+    tagline: "A calm stay with a softer view toward the hills.",
+    facilities: [
+      "Queen bed",
+      "Free WiFi",
+      "Balcony view",
+      "Hot water",
+      "11 x 13 ft room",
+      "Natural daylight",
+    ],
+  },
+  "Twin Room": {
+    capacity: 6,
+    maxMattressPerRoom: 2,
+    breakfastPrice: 1000,
+    image: "/TwinRoom.png",
+    tagline: "A spacious family setup designed for larger groups.",
+    facilities: [
+      "Two beds",
+      "Free WiFi",
+      "Hot water",
+      "Television",
+      "11 x 15 ft room",
+      "Ideal for group stays",
+    ],
+  },
+};
+
+const BOOKING_TERMS = [
+  "A valid ID is required for all adult guests at check-in.",
+  "Check-in is subject to room availability and booking confirmation.",
+  "Extra mattresses are charged separately and depend on room type.",
+  "Breakfast, when selected, is billed per room per night.",
+  "Date changes or cancellations should be requested in advance.",
+];
 
 export default function BookingPage() {
   const searchParams = useSearchParams();
   const room = searchParams.get("room");
-  const price = searchParams.get("price");
+  const price = Number(searchParams.get("price") || 0);
+
+  const roomConfig = ROOM_CONFIG[room] || ROOM_CONFIG["Market Facing"];
+  const { capacity, maxMattressPerRoom, breakfastPrice, image, tagline, facilities } =
+    roomConfig;
 
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
-
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
+  const [roomCount, setRoomCount] = useState(1);
   const [mattressCount, setMattressCount] = useState(0);
-  const totalGuests = adults + children;
-
+  const [breakfast, setBreakfast] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
 
-  const [breakfast, setBreakfast] = useState(false);
-  let total = 0;
-  let capacity = 3;
-  if (room === "Twin Room") {
-    capacity = 6;
-  }
-  let maxMattress = 1;
+  const totalGuests = adults + children;
+  const minimumRoomsRequired = Math.max(1, Math.ceil(totalGuests / capacity));
+  const selectedRoomCount = Math.max(roomCount, minimumRoomsRequired);
+  const maxMattress = selectedRoomCount * maxMattressPerRoom;
+  const selectedMattressCount = Math.min(mattressCount, maxMattress);
 
-  if (room === "Twin Room") {
-    maxMattress = 2;
-  }
-  let breakfastPrice = 500;
-
-  if (room === "Twin Room") {
-    breakfastPrice = 1000;
-  }
-  const roomsNeeded = Math.ceil(totalGuests / capacity);
-  if (checkIn && checkOut && price) {
-    const start = new Date(checkIn);
-    const end = new Date(checkOut);
-
-    const diffTime = end - start;
-    const days = diffTime / (1000 * 60 * 60 * 24);
-
-    if (days > 0) {
-      total = days * Number(price) * roomsNeeded;
-
-      if (mattressCount > 0) {
-        total += days * 500 * mattressCount;
-      }
-
-      if (breakfast) {
-        total += days * breakfastPrice * roomsNeeded;
-      }
-    }
-  }
   const today = new Date().toISOString().split("T")[0];
-  let nights = 0;
 
-  if (checkIn && checkOut) {
+  const nights = useMemo(() => {
+    if (!checkIn || !checkOut) return 0;
+
     const start = new Date(checkIn);
     const end = new Date(checkOut);
-
     const diffTime = end - start;
-    nights = diffTime / (1000 * 60 * 60 * 24);
-  }
+    return diffTime / (1000 * 60 * 60 * 24);
+  }, [checkIn, checkOut]);
+
   let error = "";
+  if (checkIn && checkOut && nights <= 0) {
+    error = "Check-out must be after check-in";
+  }
 
-  if (checkIn && checkOut) {
-    const start = new Date(checkIn);
-    const end = new Date(checkOut);
+  let total = 0;
+  if (nights > 0 && price) {
+    total = nights * price * selectedRoomCount;
 
-    if (end <= start) {
-      error = "Check-out must be after check-in";
+    if (selectedMattressCount > 0) {
+      total += nights * 500 * selectedMattressCount;
+    }
+
+    if (breakfast) {
+      total += nights * breakfastPrice * selectedRoomCount;
     }
   }
-
-
-
-
 
   return (
-    <main className="min-h-screen bg-white px-4 sm:px-6 md:px-[80px] lg:px-[140px] py-16">
-
-      {/* Heading */}
-      <h1 className="flex justify-center text-3xl md:text-4xl font-semibold text-gray-900 mb-12">
+    <main className="min-h-screen bg-white px-4 py-16 sm:px-6 md:px-[80px] lg:px-[140px]">
+      <h1 className="mb-12 flex justify-center text-3xl font-semibold text-gray-900 md:text-4xl">
         Book Your Stay
       </h1>
 
-      {/* Form */}
-      <div className="flex justify-center">
-        <div className="w-full max-w-2xl bg-white shadow-md rounded-xl p-8 border border-gray-200">
-
-          {/* Room Type */}
+      <div className="mx-auto grid w-full max-w-6xl gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
+        <div className="w-full rounded-xl border border-gray-200 bg-white p-8 shadow-md">
           <div className="mb-6">
-            <label className="block text-sm text-gray-800 font-medium mb-2">
+            <label className="mb-2 block text-sm font-medium text-gray-800">
               Room Type
             </label>
             <input
               type="text"
               value={room || "Not Selected"}
               disabled
-              className="w-full border border-gray-300 rounded-md px-4 py-3 bg-gray-100 text-gray-800 opacity-100 cursor-not-allowed"
+              className="w-full cursor-not-allowed rounded-md border border-gray-300 bg-gray-100 px-4 py-3 text-gray-800 opacity-100"
             />
           </div>
 
-          {/* Price */}
           <div className="mb-6">
-            <label className="block text-sm text-gray-800 font-medium mb-2">
+            <label className="mb-2 block text-sm font-medium text-gray-800">
               Price per night
             </label>
             <input
               type="text"
-              value={price ? `₹ ${price}` : "N/A"}
+              value={price ? `Rs. ${price}` : "N/A"}
               disabled
-              className="w-full border border-gray-300 rounded-md px-4 py-3 bg-gray-100 text-gray-800 opacity-100 cursor-not-allowed"
+              className="w-full cursor-not-allowed rounded-md border border-gray-300 bg-gray-100 px-4 py-3 text-gray-800 opacity-100"
             />
           </div>
 
-          {/* Dates */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-
+          <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label className="block text-sm text-gray-800 font-medium mb-2">
+              <label className="mb-2 block text-sm font-medium text-gray-800">
                 Check-in
               </label>
               <input
@@ -128,12 +154,12 @@ export default function BookingPage() {
                 min={today}
                 value={checkIn}
                 onChange={(e) => setCheckIn(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-4 py-3 text-gray-800"
+                className="w-full rounded-md border border-gray-300 px-4 py-3 text-gray-800"
               />
             </div>
 
             <div>
-              <label className="block text-sm text-gray-800 font-medium mb-2">
+              <label className="mb-2 block text-sm font-medium text-gray-800">
                 Check-out
               </label>
               <input
@@ -141,61 +167,113 @@ export default function BookingPage() {
                 min={checkIn || today}
                 value={checkOut}
                 onChange={(e) => setCheckOut(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-4 py-3 text-gray-800"
+                className="w-full rounded-md border border-gray-300 px-4 py-3 text-gray-800"
               />
             </div>
-
           </div>
 
-          {/* Guests */}
-          <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-
-            {/* Adults */}
+          <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label className="block text-sm text-gray-800 font-medium mb-2">
+              <label className="mb-2 block text-sm font-medium text-gray-800">
                 Adults
               </label>
               <input
                 type="number"
                 min="1"
                 value={adults}
-                onChange={(e) => setAdults(Number(e.target.value))}
-                className="w-full border border-gray-300 rounded-md px-4 py-3"
+                onChange={(e) => {
+                  const nextAdults = Math.max(1, Number(e.target.value) || 1);
+                  const nextGuests = nextAdults + children;
+                  const nextMinimumRooms = Math.max(1, Math.ceil(nextGuests / capacity));
+                  const nextRoomCount = Math.max(roomCount, nextMinimumRooms);
+
+                  setAdults(nextAdults);
+                  setRoomCount(nextRoomCount);
+                  setMattressCount((current) =>
+                    Math.min(current, nextRoomCount * maxMattressPerRoom)
+                  );
+                }}
+                className="w-full rounded-md border border-gray-300 px-4 py-3"
               />
             </div>
 
-            {/* Children */}
             <div>
-              <label className="block text-sm text-gray-800 font-medium mb-2">
+              <label className="mb-2 block text-sm font-medium text-gray-800">
                 Children (&gt; 10)
               </label>
               <input
                 type="number"
                 min="0"
                 value={children}
-                onChange={(e) => setChildren(Number(e.target.value))}
-                className="w-full border border-gray-300 rounded-md px-4 py-3"
+                onChange={(e) => {
+                  const nextChildren = Math.max(0, Number(e.target.value) || 0);
+                  const nextGuests = adults + nextChildren;
+                  const nextMinimumRooms = Math.max(1, Math.ceil(nextGuests / capacity));
+                  const nextRoomCount = Math.max(roomCount, nextMinimumRooms);
+
+                  setChildren(nextChildren);
+                  setRoomCount(nextRoomCount);
+                  setMattressCount((current) =>
+                    Math.min(current, nextRoomCount * maxMattressPerRoom)
+                  );
+                }}
+                className="w-full rounded-md border border-gray-300 px-4 py-3"
               />
             </div>
           </div>
+
           <div className="mb-6">
-            <label className="block text-sm text-gray-800 font-medium mb-2">
+            <label className="mb-2 block text-sm font-medium text-gray-800">
+              Number of Rooms
+            </label>
+              <input
+                type="number"
+                min={minimumRoomsRequired}
+                value={selectedRoomCount}
+                onChange={(e) => {
+                  const nextRoomCount = Math.max(
+                    minimumRoomsRequired,
+                    Number(e.target.value) || minimumRoomsRequired
+                  );
+
+                  setRoomCount(nextRoomCount);
+                  setMattressCount((current) =>
+                    Math.min(current, nextRoomCount * maxMattressPerRoom)
+                  );
+                }}
+                className="w-full rounded-md border border-gray-300 px-4 py-3"
+              />
+            <p className="mt-1 text-xs text-gray-500">
+              Minimum required for {totalGuests} guest(s): {minimumRoomsRequired}
+            </p>
+            {selectedRoomCount === minimumRoomsRequired && totalGuests > capacity && (
+              <p className="mt-1 text-xs text-teal-600">
+                Room count increased automatically to match guest capacity.
+              </p>
+            )}
+          </div>
+
+          <div className="mb-6">
+            <label className="mb-2 block text-sm font-medium text-gray-800">
               Extra Mattress
             </label>
-
             <input
               type="number"
               min="0"
               max={maxMattress}
-              value={mattressCount}
-              onChange={(e) => setMattressCount(Number(e.target.value))}
-              className="w-full border border-gray-300 rounded-md px-4 py-3"
+              value={selectedMattressCount}
+              onChange={(e) =>
+                setMattressCount(
+                  Math.min(maxMattress, Math.max(0, Number(e.target.value) || 0))
+                )
+              }
+              className="w-full rounded-md border border-gray-300 px-4 py-3"
             />
-
-            <p className="text-xs text-gray-500 mt-1">
-              Max allowed: {maxMattress}
+            <p className="mt-1 text-xs text-gray-500">
+              Max allowed: {maxMattress} ({maxMattressPerRoom} per room)
             </p>
           </div>
+
           <div className="mb-6 flex items-center gap-2">
             <input
               type="checkbox"
@@ -203,71 +281,169 @@ export default function BookingPage() {
               onChange={() => setBreakfast(!breakfast)}
             />
             <label className="text-sm text-gray-800">
-              Add Breakfast (+ ₹{breakfastPrice}/night)
+              Add Breakfast (+ Rs. {breakfastPrice}/night per room)
             </label>
           </div>
+
           {nights > 0 && (
-            <div className="text-center text-gray-700 mb-2">
-              {nights} night(s)
-            </div>
+            <div className="mb-2 text-center text-gray-700">{nights} night(s)</div>
           )}
-          <div className="text-center text-gray-700 mb-2">
-            Rooms Needed: {roomsNeeded}
+
+          <div className="mb-2 text-center text-gray-700">
+            Capacity per room: {capacity} guest(s)
           </div>
-          {/* Total Price */}
+
+          <div className="mb-2 text-center text-gray-700">
+            Rooms Selected: {selectedRoomCount}
+          </div>
+
           {total > 0 && (
-            <div className="mb-4 text-xl font-bold text-teal-600 text-center">
-              Total Price: ₹ {total}
-            </div>
-          )}
-          {error && (
-            <div className="mb-4 text-red-500 text-center text-sm">
-              {error}
+            <div className="mb-4 text-center text-xl font-bold text-teal-600">
+              Total Price: Rs. {total}
             </div>
           )}
 
-          {/* Button */}
+          {error && (
+            <div className="mb-4 text-center text-sm text-red-500">{error}</div>
+          )}
+
           <button
             onClick={() => setShowPopup(true)}
-            disabled={!checkIn || !checkOut || error}
-            className={`w-full py-4 rounded-md font-medium transition ${error || !checkIn || !checkOut
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-teal-500 text-white hover:bg-teal-600 hover:scale-[1.02]"
-              }`}
+            disabled={!checkIn || !checkOut || !!error}
+            className={`w-full rounded-md py-4 font-medium transition ${
+              error || !checkIn || !checkOut
+                ? "cursor-not-allowed bg-gray-400"
+                : "bg-teal-500 text-white hover:scale-[1.02] hover:bg-teal-600"
+            }`}
           >
             Confirm Booking
           </button>
-
         </div>
+
+        <aside className="lg:sticky lg:top-10">
+          <div className="overflow-hidden rounded-[24px] border border-stone-200 bg-white shadow-[0_22px_50px_-32px_rgba(15,23,42,0.24)]">
+            <div className="relative h-64 overflow-hidden">
+              <img
+                src={image}
+                alt={room || "Selected room"}
+                className="h-full w-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-6 text-white">
+                <p className="text-[10px] uppercase tracking-[0.45em] text-white/70">
+                  Selected Room
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-[0.08em]">
+                  {room || "Not Selected"}
+                </h2>
+                <p className="mt-2 max-w-md text-sm leading-relaxed text-white/80">
+                  {tagline}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-8 p-6">
+              <section>
+                <div className="mb-4 flex items-center justify-between border-b border-stone-200 pb-3">
+                  <h3 className="text-sm font-semibold uppercase tracking-[0.28em] text-stone-700">
+                    Stay Summary
+                  </h3>
+                  <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-medium text-teal-700">
+                    Rs. {price || "N/A"} / night
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-sm text-stone-600">
+                  <div className="rounded-2xl bg-stone-50 px-4 py-3">
+                    <p className="text-[10px] uppercase tracking-[0.28em] text-stone-400">
+                      Capacity
+                    </p>
+                    <p className="mt-2 font-medium text-stone-800">{capacity} guests</p>
+                  </div>
+                  <div className="rounded-2xl bg-stone-50 px-4 py-3">
+                    <p className="text-[10px] uppercase tracking-[0.28em] text-stone-400">
+                      Breakfast
+                    </p>
+                    <p className="mt-2 font-medium text-stone-800">Rs. {breakfastPrice}</p>
+                  </div>
+                  <div className="rounded-2xl bg-stone-50 px-4 py-3">
+                    <p className="text-[10px] uppercase tracking-[0.28em] text-stone-400">
+                      Rooms
+                    </p>
+                    <p className="mt-2 font-medium text-stone-800">{selectedRoomCount}</p>
+                  </div>
+                  <div className="rounded-2xl bg-stone-50 px-4 py-3">
+                    <p className="text-[10px] uppercase tracking-[0.28em] text-stone-400">
+                      Extra Mattress
+                    </p>
+                    <p className="mt-2 font-medium text-stone-800">
+                      Up to {maxMattressPerRoom} / room
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              <section>
+                <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.28em] text-stone-700">
+                  In This Room
+                </h3>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {facilities.map((item) => (
+                    <div
+                      key={item}
+                      className="flex items-center gap-3 rounded-2xl border border-stone-200/80 px-4 py-3 text-sm text-stone-600"
+                    >
+                      <span className="h-2 w-2 rounded-full bg-teal-500/80" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section>
+                <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.28em] text-stone-700">
+                  Terms & Conditions
+                </h3>
+                <div className="space-y-3">
+                  {BOOKING_TERMS.map((term) => (
+                    <div
+                      key={term}
+                      className="rounded-2xl bg-stone-50 px-4 py-3 text-sm leading-relaxed text-stone-600"
+                    >
+                      {term}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </div>
+          </div>
+        </aside>
       </div>
+
       {showPopup && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-
-          <div className="bg-white rounded-xl p-8 w-[90%] max-w-md text-center shadow-lg">
-
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-              Booking Confirmed ✅
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-[90%] max-w-md rounded-xl bg-white p-8 text-center shadow-lg">
+            <h2 className="mb-4 text-2xl font-semibold text-gray-800">
+              Booking Confirmed
             </h2>
 
-            <div className="text-gray-700 space-y-2 mb-6">
+            <div className="mb-6 space-y-2 text-gray-700">
               <p><strong>Room:</strong> {room}</p>
               <p><strong>Guests:</strong> {totalGuests}</p>
-              <p><strong>Rooms:</strong> {roomsNeeded}</p>
-              <p><strong>Extra Mattress:</strong> {mattressCount}</p>
+              <p><strong>Rooms:</strong> {selectedRoomCount}</p>
+              <p><strong>Extra Mattress:</strong> {selectedMattressCount}</p>
               <p><strong>Breakfast:</strong> {breakfast ? "Yes" : "No"}</p>
               <p><strong>Nights:</strong> {nights}</p>
-              <p><strong>Total:</strong> ₹ {total}</p>
+              <p><strong>Total:</strong> Rs. {total}</p>
             </div>
 
             <button
               onClick={() => setShowPopup(false)}
-              className="bg-teal-500 text-white px-6 py-2 rounded-md hover:bg-teal-600 transition"
+              className="rounded-md bg-teal-500 px-6 py-2 text-white transition hover:bg-teal-600"
             >
               Close
             </button>
-
           </div>
-
         </div>
       )}
     </main>
