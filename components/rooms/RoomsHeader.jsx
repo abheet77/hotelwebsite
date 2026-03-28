@@ -11,7 +11,7 @@ export default function RoomsHeader() {
       <p className="mt-6 text-base text-gray-600 leading-relaxed">
         Each of our bright, light-flooded rooms come with everything you could possibly need for a comfortable stay. 
         And yes, comfort isn’t our only objective, we also value good design, sleek contemporary furnishing complemented 
-        by the rich tones of nature’s palette as visible from our rooms’ windows and terraces.
+        by the rich tones of nature’s palette as visible from our rooms’ windows .
       </p>
 
     </div>
