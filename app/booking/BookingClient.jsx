@@ -59,6 +59,61 @@ const BOOKING_TERMS = [
   "Date changes or cancellations should be requested in advance.",
 ];
 
+function QuantityInput({
+  label,
+  value,
+  min = 0,
+  max,
+  hint,
+  onChange,
+}) {
+  const decreaseDisabled = value <= min;
+  const increaseDisabled = typeof max === "number" ? value >= max : false;
+
+  const handleManualChange = (nextValue) => {
+    if (nextValue === "") {
+      onChange(min);
+      return;
+    }
+
+    const numericValue = Number(nextValue.replace(/[^\d]/g, ""));
+    if (Number.isNaN(numericValue)) return;
+    onChange(numericValue);
+  };
+
+  return (
+    <div>
+      <label className="mb-2 block text-sm font-medium text-gray-800">{label}</label>
+      <div className="flex items-center overflow-hidden rounded-2xl border border-stone-300 bg-stone-50">
+        <button
+          type="button"
+          onClick={() => onChange(value - 1)}
+          disabled={decreaseDisabled}
+          className="flex h-12 w-12 shrink-0 items-center justify-center text-lg text-stone-600 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          -
+        </button>
+        <input
+          type="text"
+          inputMode="numeric"
+          value={value}
+          onChange={(e) => handleManualChange(e.target.value)}
+          className="h-12 min-w-0 flex-1 border-x border-stone-300 bg-white px-3 text-center text-base font-medium text-stone-800 outline-none"
+        />
+        <button
+          type="button"
+          onClick={() => onChange(value + 1)}
+          disabled={increaseDisabled}
+          className="flex h-12 w-12 shrink-0 items-center justify-center text-lg text-stone-600 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          +
+        </button>
+      </div>
+      {hint && <p className="mt-1 text-xs text-gray-500">{hint}</p>}
+    </div>
+  );
+}
+
 export default function BookingClient({ room, price }) {
   const numericPrice = Number(price || 0);
   const roomConfig = ROOM_CONFIG[room] || ROOM_CONFIG["Market Facing"];
@@ -108,6 +163,45 @@ export default function BookingClient({ room, price }) {
       total += nights * breakfastPrice * selectedRoomCount;
     }
   }
+
+  const updateAdults = (nextAdultsValue) => {
+    const nextAdults = Math.max(1, nextAdultsValue || 1);
+    const nextGuests = nextAdults + children;
+    const nextMinimumRooms = Math.max(1, Math.ceil(nextGuests / capacity));
+    const nextRoomCount = Math.max(roomCount, nextMinimumRooms);
+
+    setAdults(nextAdults);
+    setRoomCount(nextRoomCount);
+    setMattressCount((current) =>
+      Math.min(current, nextRoomCount * maxMattressPerRoom)
+    );
+  };
+
+  const updateChildren = (nextChildrenValue) => {
+    const nextChildren = Math.max(0, nextChildrenValue || 0);
+    const nextGuests = adults + nextChildren;
+    const nextMinimumRooms = Math.max(1, Math.ceil(nextGuests / capacity));
+    const nextRoomCount = Math.max(roomCount, nextMinimumRooms);
+
+    setChildren(nextChildren);
+    setRoomCount(nextRoomCount);
+    setMattressCount((current) =>
+      Math.min(current, nextRoomCount * maxMattressPerRoom)
+    );
+  };
+
+  const updateRoomCount = (nextRoomCountValue) => {
+    const nextRoomCount = Math.max(minimumRoomsRequired, nextRoomCountValue || minimumRoomsRequired);
+
+    setRoomCount(nextRoomCount);
+    setMattressCount((current) =>
+      Math.min(current, nextRoomCount * maxMattressPerRoom)
+    );
+  };
+
+  const updateMattressCount = (nextMattressValue) => {
+    setMattressCount(Math.min(maxMattress, Math.max(0, nextMattressValue || 0)));
+  };
 
   return (
     <main className="min-h-screen bg-white px-4 py-16 sm:px-6 md:px-[80px] lg:px-[140px]">
@@ -170,79 +264,23 @@ export default function BookingClient({ room, price }) {
           </div>
 
           <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-800">
-                Adults
-              </label>
-              <input
-                type="number"
-                min="1"
-                value={adults}
-                onChange={(e) => {
-                  const nextAdults = Math.max(1, Number(e.target.value) || 1);
-                  const nextGuests = nextAdults + children;
-                  const nextMinimumRooms = Math.max(1, Math.ceil(nextGuests / capacity));
-                  const nextRoomCount = Math.max(roomCount, nextMinimumRooms);
-
-                  setAdults(nextAdults);
-                  setRoomCount(nextRoomCount);
-                  setMattressCount((current) =>
-                    Math.min(current, nextRoomCount * maxMattressPerRoom)
-                  );
-                }}
-                className="w-full rounded-md border border-gray-300 px-4 py-3"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-800">
-                Children (&gt; 10)
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={children}
-                onChange={(e) => {
-                  const nextChildren = Math.max(0, Number(e.target.value) || 0);
-                  const nextGuests = adults + nextChildren;
-                  const nextMinimumRooms = Math.max(1, Math.ceil(nextGuests / capacity));
-                  const nextRoomCount = Math.max(roomCount, nextMinimumRooms);
-
-                  setChildren(nextChildren);
-                  setRoomCount(nextRoomCount);
-                  setMattressCount((current) =>
-                    Math.min(current, nextRoomCount * maxMattressPerRoom)
-                  );
-                }}
-                className="w-full rounded-md border border-gray-300 px-4 py-3"
-              />
-            </div>
+            <QuantityInput label="Adults" value={adults} min={1} onChange={updateAdults} />
+            <QuantityInput
+              label="Children (> 10)"
+              value={children}
+              min={0}
+              onChange={updateChildren}
+            />
           </div>
 
           <div className="mb-6">
-            <label className="mb-2 block text-sm font-medium text-gray-800">
-              Number of Rooms
-            </label>
-            <input
-              type="number"
-              min={minimumRoomsRequired}
+            <QuantityInput
+              label="Number of Rooms"
               value={selectedRoomCount}
-              onChange={(e) => {
-                const nextRoomCount = Math.max(
-                  minimumRoomsRequired,
-                  Number(e.target.value) || minimumRoomsRequired
-                );
-
-                setRoomCount(nextRoomCount);
-                setMattressCount((current) =>
-                  Math.min(current, nextRoomCount * maxMattressPerRoom)
-                );
-              }}
-              className="w-full rounded-md border border-gray-300 px-4 py-3"
+              min={minimumRoomsRequired}
+              onChange={updateRoomCount}
+              hint={`Minimum required for ${totalGuests} guest(s): ${minimumRoomsRequired}`}
             />
-            <p className="mt-1 text-xs text-gray-500">
-              Minimum required for {totalGuests} guest(s): {minimumRoomsRequired}
-            </p>
             {selectedRoomCount === minimumRoomsRequired && totalGuests > capacity && (
               <p className="mt-1 text-xs text-teal-600">
                 Room count increased automatically to match guest capacity.
@@ -251,24 +289,14 @@ export default function BookingClient({ room, price }) {
           </div>
 
           <div className="mb-6">
-            <label className="mb-2 block text-sm font-medium text-gray-800">
-              Extra Mattress
-            </label>
-            <input
-              type="number"
-              min="0"
-              max={maxMattress}
+            <QuantityInput
+              label="Extra Mattress"
               value={selectedMattressCount}
-              onChange={(e) =>
-                setMattressCount(
-                  Math.min(maxMattress, Math.max(0, Number(e.target.value) || 0))
-                )
-              }
-              className="w-full rounded-md border border-gray-300 px-4 py-3"
+              min={0}
+              max={maxMattress}
+              onChange={updateMattressCount}
+              hint={`Max allowed: ${maxMattress} (${maxMattressPerRoom} per room)`}
             />
-            <p className="mt-1 text-xs text-gray-500">
-              Max allowed: {maxMattress} ({maxMattressPerRoom} per room)
-            </p>
           </div>
 
           <div className="mb-6 flex items-center gap-2">
