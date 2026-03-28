@@ -143,6 +143,11 @@ export default function BookingClient({ room, price }) {
 
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
+  const [guestName, setGuestName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [emailAddress, setEmailAddress] = useState("");
+  const [validIdNumber, setValidIdNumber] = useState("");
+  const [idPhotographName, setIdPhotographName] = useState("");
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
   const [roomCount, setRoomCount] = useState(1);
@@ -173,6 +178,24 @@ export default function BookingClient({ room, price }) {
   if (checkIn && checkOut && nights <= 0) {
     error = "Check-out must be after check-in";
   }
+
+  const emailIsValid =
+    emailAddress.trim() === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailAddress.trim());
+  const phoneIsValid =
+    phoneNumber.trim() === "" || /^[0-9]{10,15}$/.test(phoneNumber.replace(/\s+/g, ""));
+
+  if (emailAddress && !emailIsValid) {
+    error = "Please enter a valid email address";
+  } else if (phoneNumber && !phoneIsValid) {
+    error = "Please enter a valid phone number";
+  }
+
+  const isGuestInfoComplete =
+    guestName.trim() &&
+    phoneNumber.trim() &&
+    emailAddress.trim() &&
+    validIdNumber.trim() &&
+    idPhotographName.trim();
 
   let total = 0;
   if (nights > 0 && numericPrice) {
@@ -254,6 +277,11 @@ export default function BookingClient({ room, price }) {
     setCheckOut(nextCheckOut);
   };
 
+  const handleIdPhotographChange = (event) => {
+    const file = event.target.files?.[0];
+    setIdPhotographName(file ? file.name : "");
+  };
+
   return (
     <main className="min-h-screen overflow-x-clip bg-white px-3 py-16 sm:px-6 md:px-[80px] lg:px-[140px]">
       <h1 className="mb-12 flex justify-center text-3xl font-semibold text-gray-900 md:text-4xl">
@@ -311,6 +339,84 @@ export default function BookingClient({ room, price }) {
                 onChange={(e) => handleCheckOutChange(e.target.value)}
                 className="w-full rounded-md border border-gray-300 px-4 py-3 text-gray-800"
               />
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <div className="mb-4 border-b border-stone-200 pb-3">
+              <h3 className="text-sm font-semibold uppercase tracking-[0.28em] text-stone-700">
+                Guest Details
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <label className="mb-2 block text-sm font-medium text-gray-800">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  placeholder="Enter full name"
+                  className="w-full rounded-md border border-gray-300 px-4 py-3 text-gray-800"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-gray-800">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value.replace(/[^\d\s+]/g, ""))}
+                  placeholder="Enter phone number"
+                  className="w-full rounded-md border border-gray-300 px-4 py-3 text-gray-800"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-gray-800">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  value={emailAddress}
+                  onChange={(e) => setEmailAddress(e.target.value)}
+                  placeholder="Enter email address"
+                  className="w-full rounded-md border border-gray-300 px-4 py-3 text-gray-800"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-gray-800">
+                  Valid ID Number
+                </label>
+                <input
+                  type="text"
+                  value={validIdNumber}
+                  onChange={(e) => setValidIdNumber(e.target.value)}
+                  placeholder="Passport / Aadhaar / Driving Licence"
+                  className="w-full rounded-md border border-gray-300 px-4 py-3 text-gray-800"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-gray-800">
+                  ID Photograph
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleIdPhotographChange}
+                  className="w-full rounded-md border border-gray-300 px-4 py-3 text-gray-800 file:mr-4 file:rounded-md file:border-0 file:bg-teal-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-teal-700"
+                />
+                {idPhotographName && (
+                  <p className="mt-1 text-xs text-gray-500">{idPhotographName}</p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -383,11 +489,17 @@ export default function BookingClient({ room, price }) {
             <div className="mb-4 text-center text-sm text-red-500">{error}</div>
           )}
 
+          {!isGuestInfoComplete && (
+            <div className="mb-4 text-center text-sm text-stone-500">
+              Please fill in all guest details before confirming the booking.
+            </div>
+          )}
+
           <button
             onClick={() => setShowPopup(true)}
-            disabled={!checkIn || !checkOut || !!error}
+            disabled={!checkIn || !checkOut || !!error || !isGuestInfoComplete}
             className={`w-full rounded-md py-4 font-medium transition ${
-              error || !checkIn || !checkOut
+              error || !checkIn || !checkOut || !isGuestInfoComplete
                 ? "cursor-not-allowed bg-gray-400"
                 : "bg-teal-500 text-white hover:scale-[1.02] hover:bg-teal-600"
             }`}
@@ -506,6 +618,11 @@ export default function BookingClient({ room, price }) {
             </h2>
 
             <div className="mb-6 space-y-2 text-gray-700">
+              <p><strong>Name:</strong> {guestName}</p>
+              <p><strong>Phone:</strong> {phoneNumber}</p>
+              <p><strong>Email:</strong> {emailAddress}</p>
+              <p><strong>Valid ID:</strong> {validIdNumber}</p>
+              <p><strong>ID Photograph:</strong> {idPhotographName}</p>
               <p><strong>Room:</strong> {room}</p>
               <p><strong>Guests:</strong> {totalGuests}</p>
               <p><strong>Rooms:</strong> {selectedRoomCount}</p>
