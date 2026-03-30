@@ -30,7 +30,3 @@ body {
 *::after {
   box-sizing: border-box;
 }
-:root {
-  --font-aboreto: var(--font-aboreto);
-  --font-montserrat: var(--font-montserrat);
-}

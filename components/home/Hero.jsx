@@ -1,12 +1,13 @@
 "use client";
 import Navbar from "../layout/Navbar";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-export default function Hero() {
+export default function Hero({ bookNowMode = "route" }) {
   const router = useRouter();
+  const pathname = usePathname();
   const heroRef = useRef(null);
   const backgroundRef = useRef(null);
   const contentRef = useRef(null);
@@ -110,8 +111,15 @@ export default function Hero() {
   }, []);
 
   const handleBookNow = () => {
+    if (bookNowMode === "scroll" || pathname === "/rooms") {
+      document.getElementById("rooms-section")?.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+
     router.push("/rooms?scroll=rooms");
   };
+
+  const isScrollMode = bookNowMode === "scroll" || pathname === "/rooms";
 
   return (
     <div
@@ -169,7 +177,7 @@ export default function Hero() {
             onClick={handleBookNow}
             className="mt-8 rounded-md bg-teal-500 px-6 py-3 text-white transition duration-300 ease-out hover:-translate-y-1 hover:bg-teal-600 hover:shadow-lg active:scale-95"
           >
-            BOOK NOW
+            {isScrollMode ? "VIEW ROOMS" : "BOOK NOW"}
           </button>
         </div>
       </div>

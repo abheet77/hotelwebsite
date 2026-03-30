@@ -22,7 +22,7 @@ export default function RoomsPageClient({ scroll }) {
   return (
     <>
       <ScrollPath />
-      <Hero />
+      <Hero bookNowMode="scroll" />
 
       <main className="relative bg-white px-6 py-12 text-black md:px-[80px] lg:px-[120px]">
         <RoomsHeader />

@@ -6,23 +6,26 @@ import { useMemo, useState } from "react";
 const ROOM_CONFIG = {
   "Market Facing": {
     capacity: 3,
-    maxMattressPerRoom: 1,
-    breakfastPrice: 500,
     image: "/marketfacing1.png",
     tagline: "Warm interiors with a lively market-facing outlook.",
     facilities: [
       "King size bed",
       "Free WiFi",
       "Hot water",
-      "Television",
+      "LED",
       "11 x 15 ft room",
-      "Window seating area",
+      "Running hot water",
+      "Generator backup",
+      "Electric blankets",
+      "Intercom",
+      "Room service",
+      "Multicuisine dining",
+      "Check-in: 2 PM",
+      "Check-out: 12 PM",
     ],
   },
   "Hill Facing": {
     capacity: 3,
-    maxMattressPerRoom: 1,
-    breakfastPrice: 500,
     image: "/hillfacing1.png",
     tagline: "A calm stay with a softer view toward the hills.",
     facilities: [
@@ -31,31 +34,65 @@ const ROOM_CONFIG = {
       "Balcony view",
       "Hot water",
       "11 x 13 ft room",
-      "Natural daylight",
+      "LED",
+      "Running hot water",
+      "Generator backup",
+      "Electric blankets",
+      "Intercom",
+      "Room service",
+      "Multicuisine dining",
+      "Check-in: 2 PM",
+      "Check-out: 12 PM",
     ],
   },
   "Twin Room": {
     capacity: 6,
-    maxMattressPerRoom: 2,
-    breakfastPrice: 1000,
     image: "/TwinRoom.png",
     tagline: "A spacious family setup designed for larger groups.",
     facilities: [
-      "Two beds",
+      "2 beds",
       "Free WiFi",
       "Hot water",
-      "Television",
-      "11 x 15 ft room",
+      "LED",
+      "11 x 20 ft room",
       "Ideal for group stays",
+      "Running hot water",
+      "Generator backup",
+      "Electric blankets",
+      "Intercom",
+      "Room service",
+      "Multicuisine dining",
+      "Check-in: 2 PM",
+      "Check-out: 12 PM",
     ],
+  },
+};
+
+const MEAL_PLANS = {
+  none: {
+    label: "None",
+    price: 0,
+    summary: "No meal plan selected.",
+  },
+  breakfast: {
+    label: "Breakfast Included",
+    price: 250,
+    summary: "Breakfast at Rs. 250 per person.",
+  },
+  breakfastMeal: {
+    label: "Breakfast + 1 Meal Included",
+    price: 600,
+    summary: "Breakfast and 1 meal at Rs. 600 per person.",
   },
 };
 
 const BOOKING_TERMS = [
   "A valid ID is required for all adult guests at check-in.",
-  "Check-in is subject to room availability and booking confirmation.",
-  "Extra mattresses are charged separately and depend on room type.",
-  "Breakfast, when selected, is billed per room per night.",
+  "Check-in time is 2 PM and check-out time is 12 PM.",
+  "Room rates are for 2 guests per room.",
+  "Each additional guest above the included 2 guests is charged Rs. 500.",
+  "Each additional guest is treated as 1 extra mattress automatically.",
+  "Meal plans are optional and billed per person per night.",
   "Date changes or cancellations should be requested in advance.",
 ];
 
@@ -80,16 +117,8 @@ function addDays(value, days) {
   return formatLocalDate(date);
 }
 
-function QuantityInput({
-  label,
-  value,
-  min = 0,
-  max,
-  hint,
-  onChange,
-}) {
+function QuantityInput({ label, value, min = 0, hint, onChange, disabled = false }) {
   const decreaseDisabled = value <= min;
-  const increaseDisabled = typeof max === "number" ? value >= max : false;
 
   const handleManualChange = (nextValue) => {
     if (nextValue === "") {
@@ -109,7 +138,7 @@ function QuantityInput({
         <button
           type="button"
           onClick={() => onChange(value - 1)}
-          disabled={decreaseDisabled}
+          disabled={disabled || decreaseDisabled}
           className="flex h-12 w-12 shrink-0 items-center justify-center text-lg text-stone-600 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
         >
           -
@@ -119,12 +148,13 @@ function QuantityInput({
           inputMode="numeric"
           value={value}
           onChange={(e) => handleManualChange(e.target.value)}
-          className="h-12 min-w-0 flex-1 border-x border-stone-300 bg-white px-3 text-center text-base font-medium text-stone-800 outline-none"
+          disabled={disabled}
+          className="h-12 min-w-0 flex-1 border-x border-stone-300 bg-white px-3 text-center text-base font-medium text-stone-800 outline-none disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-400"
         />
         <button
           type="button"
           onClick={() => onChange(value + 1)}
-          disabled={increaseDisabled}
+          disabled={disabled}
           className="flex h-12 w-12 shrink-0 items-center justify-center text-lg text-stone-600 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
         >
           +
@@ -138,8 +168,7 @@ function QuantityInput({
 export default function BookingClient({ room, price }) {
   const numericPrice = Number(price || 0);
   const roomConfig = ROOM_CONFIG[room] || ROOM_CONFIG["Market Facing"];
-  const { capacity, maxMattressPerRoom, breakfastPrice, image, tagline, facilities } =
-    roomConfig;
+  const { capacity, image, tagline, facilities } = roomConfig;
 
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
@@ -149,17 +178,24 @@ export default function BookingClient({ room, price }) {
   const [validIdNumber, setValidIdNumber] = useState("");
   const [idPhotographName, setIdPhotographName] = useState("");
   const [adults, setAdults] = useState(1);
-  const [children, setChildren] = useState(0);
+  const [childrenAbove10, setChildrenAbove10] = useState(0);
+  const [childrenBelow10, setChildrenBelow10] = useState(0);
   const [roomCount, setRoomCount] = useState(1);
-  const [mattressCount, setMattressCount] = useState(0);
-  const [breakfast, setBreakfast] = useState(false);
+  const [mealPlan, setMealPlan] = useState("none");
+  const [mealPlanPeople, setMealPlanPeople] = useState(0);
   const [showPopup, setShowPopup] = useState(false);
 
-  const totalGuests = adults + children;
-  const minimumRoomsRequired = Math.max(1, Math.ceil(totalGuests / capacity));
+  const billableGuests = adults + childrenAbove10;
+  const complimentaryChildrenBelow10 = Math.min(childrenBelow10, 2);
+  const totalOccupants = billableGuests + complimentaryChildrenBelow10;
+  const minimumRoomsRequired = Math.max(1, Math.ceil(billableGuests / capacity));
   const selectedRoomCount = Math.max(roomCount, minimumRoomsRequired);
-  const maxMattress = selectedRoomCount * maxMattressPerRoom;
-  const selectedMattressCount = Math.min(mattressCount, maxMattress);
+  const includedGuests = selectedRoomCount * 2;
+  const extraGuestCount = Math.max(0, billableGuests - includedGuests);
+  const autoMattressCount = extraGuestCount;
+  const selectedMealPlan = MEAL_PLANS[mealPlan] || MEAL_PLANS.none;
+  const normalizedMealPlanPeople =
+    mealPlan === "none" ? 0 : Math.min(Math.max(mealPlanPeople, 0), totalOccupants);
 
   const today = formatLocalDate(new Date());
   const minimumCheckoutDate = checkIn ? addDays(checkIn, 1) : today;
@@ -174,79 +210,87 @@ export default function BookingClient({ room, price }) {
     return diffTime / (1000 * 60 * 60 * 24);
   }, [checkIn, checkOut]);
 
+  const trimmedName = guestName.trim();
+  const trimmedPhone = phoneNumber.replace(/\s+/g, "");
+  const trimmedEmail = emailAddress.trim();
+  const trimmedId = validIdNumber.trim();
+
+  const nameIsValid = /^[A-Za-z][A-Za-z\s'.-]{1,}$/.test(trimmedName);
+  const phoneIsValid = /^[0-9]{10}$/.test(trimmedPhone);
+  const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
+  const validIdIsValid = trimmedId.length > 0;
+  const idPhotographIsValid = Boolean(idPhotographName);
+  const isGuestInfoComplete =
+    trimmedName &&
+    trimmedPhone &&
+    trimmedEmail &&
+    trimmedId &&
+    idPhotographIsValid;
+
   let error = "";
   if (checkIn && checkOut && nights <= 0) {
     error = "Check-out must be after check-in";
-  }
-
-  const emailIsValid =
-    emailAddress.trim() === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailAddress.trim());
-  const phoneIsValid =
-    phoneNumber.trim() === "" || /^[0-9]{10,15}$/.test(phoneNumber.replace(/\s+/g, ""));
-
-  if (emailAddress && !emailIsValid) {
+  } else if (trimmedName && !nameIsValid) {
+    error = "Please enter a valid name";
+  } else if (trimmedEmail && !emailIsValid) {
     error = "Please enter a valid email address";
-  } else if (phoneNumber && !phoneIsValid) {
-    error = "Please enter a valid phone number";
+  } else if (trimmedPhone && !phoneIsValid) {
+    error = "Please enter a valid 10-digit phone number";
+  } else if (trimmedId && !validIdIsValid) {
+    error = "Please enter a valid ID number";
   }
 
-  const isGuestInfoComplete =
-    guestName.trim() &&
-    phoneNumber.trim() &&
-    emailAddress.trim() &&
-    validIdNumber.trim() &&
-    idPhotographName.trim();
+  const areAllInputsValid =
+    nameIsValid &&
+    phoneIsValid &&
+    emailIsValid &&
+    validIdIsValid &&
+    idPhotographIsValid &&
+    adults >= 1 &&
+    childrenAbove10 >= 0 &&
+    childrenBelow10 >= 0 &&
+    childrenBelow10 <= 2 &&
+    selectedRoomCount >= minimumRoomsRequired &&
+    normalizedMealPlanPeople >= 0 &&
+    normalizedMealPlanPeople <= totalOccupants;
 
   let total = 0;
   if (nights > 0 && numericPrice) {
     total = nights * numericPrice * selectedRoomCount;
 
-    if (selectedMattressCount > 0) {
-      total += nights * 500 * selectedMattressCount;
+    if (extraGuestCount > 0) {
+      total += nights * 500 * extraGuestCount;
     }
 
-    if (breakfast) {
-      total += nights * breakfastPrice * selectedRoomCount;
+    if (normalizedMealPlanPeople > 0 && selectedMealPlan.price > 0) {
+      total += nights * selectedMealPlan.price * normalizedMealPlanPeople;
     }
   }
 
   const updateAdults = (nextAdultsValue) => {
     const nextAdults = Math.max(1, nextAdultsValue || 1);
-    const nextGuests = nextAdults + children;
+    const nextGuests = nextAdults + childrenAbove10;
     const nextMinimumRooms = Math.max(1, Math.ceil(nextGuests / capacity));
-    const nextRoomCount = Math.max(roomCount, nextMinimumRooms);
-
     setAdults(nextAdults);
-    setRoomCount(nextRoomCount);
-    setMattressCount((current) =>
-      Math.min(current, nextRoomCount * maxMattressPerRoom)
-    );
+    setRoomCount((current) => Math.max(current, nextMinimumRooms));
   };
 
-  const updateChildren = (nextChildrenValue) => {
+  const updateChildrenAbove10 = (nextChildrenValue) => {
     const nextChildren = Math.max(0, nextChildrenValue || 0);
     const nextGuests = adults + nextChildren;
     const nextMinimumRooms = Math.max(1, Math.ceil(nextGuests / capacity));
-    const nextRoomCount = Math.max(roomCount, nextMinimumRooms);
+    setChildrenAbove10(nextChildren);
+    setRoomCount((current) => Math.max(current, nextMinimumRooms));
+  };
 
-    setChildren(nextChildren);
-    setRoomCount(nextRoomCount);
-    setMattressCount((current) =>
-      Math.min(current, nextRoomCount * maxMattressPerRoom)
-    );
+  const updateChildrenBelow10 = (nextChildrenValue) => {
+    const nextChildren = Math.min(2, Math.max(0, nextChildrenValue || 0));
+    setChildrenBelow10(nextChildren);
   };
 
   const updateRoomCount = (nextRoomCountValue) => {
     const nextRoomCount = Math.max(minimumRoomsRequired, nextRoomCountValue || minimumRoomsRequired);
-
     setRoomCount(nextRoomCount);
-    setMattressCount((current) =>
-      Math.min(current, nextRoomCount * maxMattressPerRoom)
-    );
-  };
-
-  const updateMattressCount = (nextMattressValue) => {
-    setMattressCount(Math.min(maxMattress, Math.max(0, nextMattressValue || 0)));
   };
 
   const handleCheckInChange = (nextCheckIn) => {
@@ -282,6 +326,34 @@ export default function BookingClient({ room, price }) {
     setIdPhotographName(file ? file.name : "");
   };
 
+  const updateMealPlanPeople = (nextMealPlanPeopleValue) => {
+    const cappedValue = Math.min(
+      totalOccupants,
+      Math.max(0, nextMealPlanPeopleValue || 0),
+    );
+    setMealPlanPeople(cappedValue);
+  };
+
+  const handleMealPlanChange = (nextMealPlan) => {
+    setMealPlan(nextMealPlan);
+
+    if (nextMealPlan === "none") {
+      setMealPlanPeople(0);
+      return;
+    }
+
+    setMealPlanPeople((current) => {
+      if (totalOccupants === 0) return 0;
+      if (current <= 0) return totalOccupants;
+      return Math.min(current, totalOccupants);
+    });
+  };
+
+  const mealPlanHint =
+    mealPlan === "none"
+      ? "Select a meal plan first to choose the number of people."
+      : `You can apply this plan to up to ${totalOccupants} occupant(s).`;
+
   return (
     <main className="min-h-screen overflow-x-clip bg-white px-3 py-16 sm:px-6 md:px-[80px] lg:px-[140px]">
       <h1 className="mb-12 flex justify-center text-3xl font-semibold text-gray-900 md:text-4xl">
@@ -289,7 +361,7 @@ export default function BookingClient({ room, price }) {
       </h1>
 
       <div className="mx-auto grid w-full max-w-6xl gap-8 overflow-x-clip lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-start">
-        <div className="min-w-0 w-full rounded-xl border border-gray-200 bg-white p-5 shadow-md sm:p-8">
+        <div className="order-2 min-w-0 w-full rounded-xl border border-gray-200 bg-white p-5 shadow-md sm:p-8 lg:order-1">
           <div className="mb-6">
             <label className="mb-2 block text-sm font-medium text-gray-800">
               Room Type
@@ -361,6 +433,11 @@ export default function BookingClient({ room, price }) {
                   placeholder="Enter full name"
                   className="w-full rounded-md border border-gray-300 px-4 py-3 text-gray-800"
                 />
+                {guestName && !nameIsValid && (
+                  <p className="mt-1 text-xs text-red-500">
+                    Enter at least 2 letters. Numbers are not allowed.
+                  </p>
+                )}
               </div>
 
               <div>
@@ -371,10 +448,15 @@ export default function BookingClient({ room, price }) {
                   type="tel"
                   inputMode="numeric"
                   value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value.replace(/[^\d\s+]/g, ""))}
-                  placeholder="Enter phone number"
+                  onChange={(e) => setPhoneNumber(e.target.value.replace(/[^\d]/g, ""))}
+                  placeholder="Enter 10-digit phone number"
                   className="w-full rounded-md border border-gray-300 px-4 py-3 text-gray-800"
                 />
+                {phoneNumber && !phoneIsValid && (
+                  <p className="mt-1 text-xs text-red-500">
+                    Phone number must be exactly 10 digits.
+                  </p>
+                )}
               </div>
 
               <div>
@@ -388,6 +470,9 @@ export default function BookingClient({ room, price }) {
                   placeholder="Enter email address"
                   className="w-full rounded-md border border-gray-300 px-4 py-3 text-gray-800"
                 />
+                {emailAddress && !emailIsValid && (
+                  <p className="mt-1 text-xs text-red-500">Enter a valid email address.</p>
+                )}
               </div>
 
               <div>
@@ -413,8 +498,10 @@ export default function BookingClient({ room, price }) {
                   onChange={handleIdPhotographChange}
                   className="w-full rounded-md border border-gray-300 px-4 py-3 text-gray-800 file:mr-4 file:rounded-md file:border-0 file:bg-teal-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-teal-700"
                 />
-                {idPhotographName && (
+                {idPhotographName ? (
                   <p className="mt-1 text-xs text-gray-500">{idPhotographName}</p>
+                ) : (
+                  <p className="mt-1 text-xs text-red-500">Please upload a valid ID photograph.</p>
                 )}
               </div>
             </div>
@@ -424,9 +511,19 @@ export default function BookingClient({ room, price }) {
             <QuantityInput label="Adults" value={adults} min={1} onChange={updateAdults} />
             <QuantityInput
               label="Children (> 10)"
-              value={children}
+              value={childrenAbove10}
               min={0}
-              onChange={updateChildren}
+              onChange={updateChildrenAbove10}
+            />
+          </div>
+
+          <div className="mb-6">
+            <QuantityInput
+              label="Children (< 10)"
+              value={childrenBelow10}
+              min={0}
+              onChange={updateChildrenBelow10}
+              hint="Up to 2 children below 10 are allowed and not counted as chargeable guests."
             />
           </div>
 
@@ -436,47 +533,85 @@ export default function BookingClient({ room, price }) {
               value={selectedRoomCount}
               min={minimumRoomsRequired}
               onChange={updateRoomCount}
-              hint={`Minimum required for ${totalGuests} guest(s): ${minimumRoomsRequired}`}
+              hint={`Minimum required for ${billableGuests} chargeable guest(s): ${minimumRoomsRequired}`}
             />
-            {selectedRoomCount === minimumRoomsRequired && totalGuests > capacity && (
+            {selectedRoomCount === minimumRoomsRequired && billableGuests > capacity && (
               <p className="mt-1 text-xs text-teal-600">
                 Room count increased automatically to match guest capacity.
               </p>
             )}
           </div>
 
-          <div className="mb-6">
-            <QuantityInput
-              label="Extra Mattress"
-              value={selectedMattressCount}
-              min={0}
-              max={maxMattress}
-              onChange={updateMattressCount}
-              hint={`Max allowed: ${maxMattress} (${maxMattressPerRoom} per room)`}
-            />
+          <div className="mb-6 rounded-2xl border border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600">
+            <div className="flex items-center justify-between gap-4">
+              <span className="font-medium text-stone-700">Extra Guests / Extra Mattresses</span>
+              <span className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-teal-700">
+                {extraGuestCount}
+              </span>
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-stone-500">
+              Room price is for 2 people. Every additional guest adds Rs. 500 and is treated as 1 extra mattress automatically.
+            </p>
           </div>
 
-          <div className="mb-6 flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={breakfast}
-              onChange={() => setBreakfast(!breakfast)}
-            />
-            <label className="text-sm text-gray-800">
-              Add Breakfast (+ Rs. {breakfastPrice}/night per room)
-            </label>
+          <div className="mb-6 rounded-2xl border border-stone-300 bg-stone-50 px-4 py-4">
+            <div className="mb-4 border-b border-stone-200 pb-3">
+              <h3 className="text-sm font-semibold uppercase tracking-[0.28em] text-stone-700">
+                Meal Plan
+              </h3>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-gray-800">
+                  Select Plan
+                </label>
+                <select
+                  value={mealPlan}
+                  onChange={(e) => handleMealPlanChange(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-gray-800"
+                >
+                  <option value="breakfast">Breakfast Included</option>
+                  <option value="breakfastMeal">Breakfast + 1 Meal Included</option>
+                  <option value="none">None</option>
+                </select>
+                <p className="mt-2 text-xs leading-relaxed text-stone-500">
+                  {selectedMealPlan.summary}
+                </p>
+              </div>
+
+              <QuantityInput
+                label="Plan For How Many People"
+                value={normalizedMealPlanPeople}
+                min={0}
+                hint={mealPlanHint}
+                onChange={updateMealPlanPeople}
+                disabled={mealPlan === "none"}
+              />
+              {mealPlan !== "none" && normalizedMealPlanPeople > 0 && (
+                <p className="text-xs text-teal-700">
+                  {selectedMealPlan.label}: Rs. {selectedMealPlan.price} per person per night
+                </p>
+              )}
+            </div>
           </div>
 
-          {nights > 0 && (
-            <div className="mb-2 text-center text-gray-700">{nights} night(s)</div>
-          )}
+          {nights > 0 && <div className="mb-2 text-center text-gray-700">{nights} night(s)</div>}
 
           <div className="mb-2 text-center text-gray-700">
             Capacity per room: {capacity} guest(s)
           </div>
 
           <div className="mb-2 text-center text-gray-700">
+            Total Occupants: {totalOccupants}
+          </div>
+
+          <div className="mb-2 text-center text-gray-700">
             Rooms Selected: {selectedRoomCount}
+          </div>
+
+          <div className="mb-2 text-center text-gray-700">
+            Extra Guests Charged: {extraGuestCount}
           </div>
 
           {total > 0 && (
@@ -485,9 +620,7 @@ export default function BookingClient({ room, price }) {
             </div>
           )}
 
-          {error && (
-            <div className="mb-4 text-center text-sm text-red-500">{error}</div>
-          )}
+          {error && <div className="mb-4 text-center text-sm text-red-500">{error}</div>}
 
           {!isGuestInfoComplete && (
             <div className="mb-4 text-center text-sm text-stone-500">
@@ -497,9 +630,9 @@ export default function BookingClient({ room, price }) {
 
           <button
             onClick={() => setShowPopup(true)}
-            disabled={!checkIn || !checkOut || !!error || !isGuestInfoComplete}
+            disabled={!checkIn || !checkOut || !!error || !isGuestInfoComplete || !areAllInputsValid}
             className={`w-full rounded-md py-4 font-medium transition ${
-              error || !checkIn || !checkOut || !isGuestInfoComplete
+              error || !checkIn || !checkOut || !isGuestInfoComplete || !areAllInputsValid
                 ? "cursor-not-allowed bg-gray-400"
                 : "bg-teal-500 text-white hover:scale-[1.02] hover:bg-teal-600"
             }`}
@@ -508,7 +641,7 @@ export default function BookingClient({ room, price }) {
           </button>
         </div>
 
-        <aside className="min-w-0 lg:sticky lg:top-10">
+        <aside className="order-1 min-w-0 lg:sticky lg:top-10 lg:order-2">
           <div className="overflow-hidden rounded-[24px] border border-stone-200 bg-white shadow-[0_22px_50px_-32px_rgba(15,23,42,0.24)]">
             <div className="relative h-64 overflow-hidden">
               <Image
@@ -552,9 +685,9 @@ export default function BookingClient({ room, price }) {
                   </div>
                   <div className="rounded-2xl bg-stone-50 px-4 py-3">
                     <p className="text-[10px] uppercase tracking-[0.28em] text-stone-400">
-                      Breakfast
+                      Meal Plan
                     </p>
-                    <p className="mt-2 font-medium text-stone-800">Rs. {breakfastPrice}</p>
+                    <p className="mt-2 font-medium text-stone-800">{selectedMealPlan.label}</p>
                   </div>
                   <div className="rounded-2xl bg-stone-50 px-4 py-3">
                     <p className="text-[10px] uppercase tracking-[0.28em] text-stone-400">
@@ -564,12 +697,15 @@ export default function BookingClient({ room, price }) {
                   </div>
                   <div className="rounded-2xl bg-stone-50 px-4 py-3">
                     <p className="text-[10px] uppercase tracking-[0.28em] text-stone-400">
-                      Extra Mattress
+                      Plan Guests
                     </p>
-                    <p className="mt-2 font-medium text-stone-800">
-                      Up to {maxMattressPerRoom} / room
-                    </p>
+                    <p className="mt-2 font-medium text-stone-800">{normalizedMealPlanPeople}</p>
                   </div>
+                </div>
+                <div className="mt-3 rounded-2xl bg-stone-50 px-4 py-3 text-sm text-stone-600">
+                  {mealPlan === "none"
+                    ? "No meal plan cost added."
+                    : `${selectedMealPlan.label} for ${normalizedMealPlanPeople} occupant(s) at Rs. ${selectedMealPlan.price} per person per night.`}
                 </div>
               </section>
 
@@ -624,10 +760,14 @@ export default function BookingClient({ room, price }) {
               <p><strong>Valid ID:</strong> {validIdNumber}</p>
               <p><strong>ID Photograph:</strong> {idPhotographName}</p>
               <p><strong>Room:</strong> {room}</p>
-              <p><strong>Guests:</strong> {totalGuests}</p>
+              <p><strong>Adults:</strong> {adults}</p>
+              <p><strong>Children &gt; 10:</strong> {childrenAbove10}</p>
+              <p><strong>Children &lt; 10:</strong> {complimentaryChildrenBelow10}</p>
+              <p><strong>Total Occupants:</strong> {totalOccupants}</p>
               <p><strong>Rooms:</strong> {selectedRoomCount}</p>
-              <p><strong>Extra Mattress:</strong> {selectedMattressCount}</p>
-              <p><strong>Breakfast:</strong> {breakfast ? "Yes" : "No"}</p>
+              <p><strong>Extra Guests / Mattresses:</strong> {autoMattressCount}</p>
+              <p><strong>Meal Plan:</strong> {selectedMealPlan.label}</p>
+              <p><strong>Meal Plan People:</strong> {normalizedMealPlanPeople}</p>
               <p><strong>Nights:</strong> {nights}</p>
               <p><strong>Total:</strong> Rs. {total}</p>
             </div>
