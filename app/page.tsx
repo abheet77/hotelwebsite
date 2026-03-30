@@ -1,33 +1,12 @@
-"use client";
+import HomeClient from "./HomeClient";
 
-import Hero from "@/components/home/Hero";
-import Features from "@/components/home/Features";
-import Footer from "@/app/common/Footer";
-import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+type HomePageProps = {
+  searchParams?: Promise<{ scroll?: string | string[] }>;
+};
 
-export default function Home() {
-  const searchParams = useSearchParams();
+export default async function HomePage({ searchParams }: HomePageProps) {
+  const params = await searchParams;
+  const scroll = Array.isArray(params?.scroll) ? params.scroll[0] : params?.scroll;
 
-  useEffect(() => {
-    if (searchParams.get("scroll") === "features") {
-      setTimeout(() => {
-        document
-          .getElementById("features-section")
-          ?.scrollIntoView({ behavior: "smooth" });
-      }, 500);
-    }
-  }, [searchParams]);
-
-  return (
-    <>
-      <Hero />
-
-      <div id="features-section">
-        <Features />
-      </div>
-
-      <Footer />
-    </>
-  );
+  return <HomeClient scroll={scroll || ""} />;
 }
