@@ -184,6 +184,8 @@ export default function BookingClient({ room, price }) {
   const [mealPlan, setMealPlan] = useState("none");
   const [mealPlanPeople, setMealPlanPeople] = useState(0);
   const [showPopup, setShowPopup] = useState(false);
+  const [apiError, setApiError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const billableGuests = adults + childrenAbove10;
   const complimentaryChildrenBelow10 = Math.min(childrenBelow10, 2);
@@ -353,6 +355,85 @@ export default function BookingClient({ room, price }) {
     mealPlan === "none"
       ? "Select a meal plan first to choose the number of people."
       : `You can apply this plan to up to ${totalOccupants} occupant(s).`;
+
+  const handleConfirmBooking = async () => {
+    if (
+      !checkIn ||
+      !checkOut ||
+      error ||
+      !isGuestInfoComplete ||
+      !areAllInputsValid ||
+      isSubmitting
+    ) {
+      return;
+    }
+
+    setApiError("");
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/book", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          guestName: trimmedName,
+          phoneNumber: trimmedPhone,
+          emailAddress: trimmedEmail,
+          validIdNumber: trimmedId,
+          idPhotographName,
+          checkIn,
+          checkOut,
+          adults,
+          childrenAbove10,
+          childrenBelow10: complimentaryChildrenBelow10,
+          roomCount: selectedRoomCount,
+          extraGuestCount,
+          autoMattressCount,
+          mealPlan,
+          mealPlanLabel: selectedMealPlan.label,
+          mealPlanPeople: normalizedMealPlanPeople,
+          roomType: room || "Not Selected",
+          pricePerNight: numericPrice,
+          nights,
+          totalOccupants,
+          totalPrice: total,
+        }),
+      });
+
+      const responseText = await response.text();
+      let result = null;
+
+      try {
+        result = responseText ? JSON.parse(responseText) : null;
+      } catch {
+        result = null;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          result?.details ||
+            result?.message ||
+            `Booking could not be saved. Server returned ${response.status}.`,
+        );
+      }
+
+      if (!result) {
+        throw new Error("Booking was saved, but the server response was invalid.");
+      }
+
+      setShowPopup(true);
+    } catch (submitError) {
+      setApiError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Booking could not be saved. Please try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <main className="min-h-screen overflow-x-clip bg-white px-3 py-16 sm:px-6 md:px-[80px] lg:px-[140px]">
@@ -621,6 +702,7 @@ export default function BookingClient({ room, price }) {
           )}
 
           {error && <div className="mb-4 text-center text-sm text-red-500">{error}</div>}
+          {apiError && <div className="mb-4 text-center text-sm text-red-500">{apiError}</div>}
 
           {!isGuestInfoComplete && (
             <div className="mb-4 text-center text-sm text-stone-500">
@@ -629,15 +711,15 @@ export default function BookingClient({ room, price }) {
           )}
 
           <button
-            onClick={() => setShowPopup(true)}
-            disabled={!checkIn || !checkOut || !!error || !isGuestInfoComplete || !areAllInputsValid}
+            onClick={handleConfirmBooking}
+            disabled={!checkIn || !checkOut || !!error || !isGuestInfoComplete || !areAllInputsValid || isSubmitting}
             className={`w-full rounded-md py-4 font-medium transition ${
-              error || !checkIn || !checkOut || !isGuestInfoComplete || !areAllInputsValid
+              error || !checkIn || !checkOut || !isGuestInfoComplete || !areAllInputsValid || isSubmitting
                 ? "cursor-not-allowed bg-gray-400"
                 : "bg-teal-500 text-white hover:scale-[1.02] hover:bg-teal-600"
             }`}
           >
-            Confirm Booking
+            {isSubmitting ? "Saving Booking..." : "Confirm Booking"}
           </button>
         </div>
 
