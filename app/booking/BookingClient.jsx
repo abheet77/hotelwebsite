@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const ROOM_CONFIG = {
   "Market Facing": {
@@ -177,6 +177,7 @@ export default function BookingClient({ room, price }) {
   const [emailAddress, setEmailAddress] = useState("");
   const [validIdNumber, setValidIdNumber] = useState("");
   const [idPhotographName, setIdPhotographName] = useState("");
+  const [idPhotographFile, setIdPhotographFile] = useState(null);
   const [adults, setAdults] = useState(1);
   const [childrenAbove10, setChildrenAbove10] = useState(0);
   const [childrenBelow10, setChildrenBelow10] = useState(0);
@@ -185,6 +186,10 @@ export default function BookingClient({ room, price }) {
   const [mealPlanPeople, setMealPlanPeople] = useState(0);
   const [showPopup, setShowPopup] = useState(false);
   const [apiError, setApiError] = useState("");
+  const [availabilityMessage, setAvailabilityMessage] = useState("");
+  const [availabilityError, setAvailabilityError] = useState("");
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
+  const [isDateAvailable, setIsDateAvailable] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const billableGuests = adults + childrenAbove10;
@@ -325,6 +330,7 @@ export default function BookingClient({ room, price }) {
 
   const handleIdPhotographChange = (event) => {
     const file = event.target.files?.[0];
+    setIdPhotographFile(file ?? null);
     setIdPhotographName(file ? file.name : "");
   };
 
@@ -356,11 +362,74 @@ export default function BookingClient({ room, price }) {
       ? "Select a meal plan first to choose the number of people."
       : `You can apply this plan to up to ${totalOccupants} occupant(s).`;
 
+  useEffect(() => {
+    let ignore = false;
+
+    if (!room || !checkIn || !checkOut || nights <= 0) {
+      setAvailabilityMessage("");
+      setAvailabilityError("");
+      setIsDateAvailable(true);
+      setIsCheckingAvailability(false);
+      return undefined;
+    }
+
+    const runAvailabilityCheck = async () => {
+      setIsCheckingAvailability(true);
+      setAvailabilityError("");
+
+      try {
+        const params = new URLSearchParams({
+          roomType: room,
+          checkIn,
+          checkOut,
+          roomCount: String(selectedRoomCount),
+        });
+
+        const response = await fetch(`/api/availability?${params.toString()}`);
+        const result = await response.json().catch(() => null);
+
+        if (ignore) return;
+
+        if (!response.ok) {
+          throw new Error(
+            result?.details ||
+              result?.message ||
+              "Availability could not be checked.",
+          );
+        }
+
+        setIsDateAvailable(Boolean(result?.available));
+        setAvailabilityMessage(result?.message || "");
+        setAvailabilityError(result?.available ? "" : result?.message || "");
+      } catch (availabilityCheckError) {
+        if (ignore) return;
+        const message =
+          availabilityCheckError instanceof Error
+            ? availabilityCheckError.message
+            : "Availability could not be checked.";
+        setIsDateAvailable(false);
+        setAvailabilityMessage("");
+        setAvailabilityError(message);
+      } finally {
+        if (!ignore) {
+          setIsCheckingAvailability(false);
+        }
+      }
+    };
+
+    runAvailabilityCheck();
+
+    return () => {
+      ignore = true;
+    };
+  }, [room, checkIn, checkOut, nights, selectedRoomCount]);
+
   const handleConfirmBooking = async () => {
     if (
       !checkIn ||
       !checkOut ||
       error ||
+      !isDateAvailable ||
       !isGuestInfoComplete ||
       !areAllInputsValid ||
       isSubmitting
@@ -372,34 +441,35 @@ export default function BookingClient({ room, price }) {
     setIsSubmitting(true);
 
     try {
+      const formData = new FormData();
+      formData.append("guestName", trimmedName);
+      formData.append("phoneNumber", trimmedPhone);
+      formData.append("emailAddress", trimmedEmail);
+      formData.append("validIdNumber", trimmedId);
+      formData.append("checkIn", checkIn);
+      formData.append("checkOut", checkOut);
+      formData.append("adults", String(adults));
+      formData.append("childrenAbove10", String(childrenAbove10));
+      formData.append("childrenBelow10", String(complimentaryChildrenBelow10));
+      formData.append("roomCount", String(selectedRoomCount));
+      formData.append("extraGuestCount", String(extraGuestCount));
+      formData.append("autoMattressCount", String(autoMattressCount));
+      formData.append("mealPlan", mealPlan);
+      formData.append("mealPlanLabel", selectedMealPlan.label);
+      formData.append("mealPlanPeople", String(normalizedMealPlanPeople));
+      formData.append("roomType", room || "Not Selected");
+      formData.append("pricePerNight", String(numericPrice));
+      formData.append("nights", String(nights));
+      formData.append("totalOccupants", String(totalOccupants));
+      formData.append("totalPrice", String(total));
+
+      if (idPhotographFile) {
+        formData.append("idPhotograph", idPhotographFile);
+      }
+
       const response = await fetch("/api/book", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          guestName: trimmedName,
-          phoneNumber: trimmedPhone,
-          emailAddress: trimmedEmail,
-          validIdNumber: trimmedId,
-          idPhotographName,
-          checkIn,
-          checkOut,
-          adults,
-          childrenAbove10,
-          childrenBelow10: complimentaryChildrenBelow10,
-          roomCount: selectedRoomCount,
-          extraGuestCount,
-          autoMattressCount,
-          mealPlan,
-          mealPlanLabel: selectedMealPlan.label,
-          mealPlanPeople: normalizedMealPlanPeople,
-          roomType: room || "Not Selected",
-          pricePerNight: numericPrice,
-          nights,
-          totalOccupants,
-          totalPrice: total,
-        }),
+        body: formData,
       });
 
       const responseText = await response.text();
@@ -494,6 +564,20 @@ export default function BookingClient({ room, price }) {
               />
             </div>
           </div>
+
+          {checkIn && checkOut && (
+            <div
+              className={`mb-6 rounded-2xl border px-4 py-4 text-sm ${
+                availabilityError
+                  ? "border-rose-200 bg-rose-50 text-rose-700"
+                  : "border-emerald-200 bg-emerald-50 text-emerald-700"
+              }`}
+            >
+              {isCheckingAvailability
+                ? "Checking room availability..."
+                : availabilityError || availabilityMessage}
+            </div>
+          )}
 
           <div className="mb-6">
             <div className="mb-4 border-b border-stone-200 pb-3">
@@ -712,9 +796,9 @@ export default function BookingClient({ room, price }) {
 
           <button
             onClick={handleConfirmBooking}
-            disabled={!checkIn || !checkOut || !!error || !isGuestInfoComplete || !areAllInputsValid || isSubmitting}
+            disabled={!checkIn || !checkOut || !!error || !isDateAvailable || !isGuestInfoComplete || !areAllInputsValid || isSubmitting || isCheckingAvailability}
             className={`w-full rounded-md py-4 font-medium transition ${
-              error || !checkIn || !checkOut || !isGuestInfoComplete || !areAllInputsValid || isSubmitting
+              error || !checkIn || !checkOut || !isDateAvailable || !isGuestInfoComplete || !areAllInputsValid || isSubmitting || isCheckingAvailability
                 ? "cursor-not-allowed bg-gray-400"
                 : "bg-teal-500 text-white hover:scale-[1.02] hover:bg-teal-600"
             }`}
